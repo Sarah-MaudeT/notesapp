@@ -1,185 +1,160 @@
-import { useState, useEffect } from "react";
-import {
-  Authenticator,
-  Button,
-  Text,
-  TextField,
-  Heading,
-  Flex,
-  View,
-  Image,
-  Grid,
-  Divider,
-} from "@aws-amplify/ui-react";
-import { Amplify } from "aws-amplify";
-import "@aws-amplify/ui-react/styles.css";
-import { getUrl } from "aws-amplify/storage";
-import { uploadData } from "aws-amplify/storage";
-import { generateClient } from "aws-amplify/data";
-import outputs from "../amplify_outputs.json";
-/**
- * @type {import('aws-amplify/data').Client<import('../amplify/data/resource').Schema>}
- */
+import React, { useState } from 'react';
+import './App.css';
+import { generateQuiz } from './quizGenerator';
 
-Amplify.configure(outputs);
-const client = generateClient({
-  authMode: "userPool",
-});
+function App() {
+  const [quizData, setQuizData] = useState(null);
+  const [inputText, setInputText] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [score, setScore] = useState(0);
+  const [showScore, setShowScore] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [answered, setAnswered] = useState(false);
+  const [showNextButton, setShowNextButton] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const [numberOfQuestions, setNumberOfQuestions] = useState(4);
 
-export default function App() {
-  const [notes, setNotes] = useState([]);
+  const handleGenerateQuiz = async () => {
+    setIsGenerating(true);
+    setError(null);
+    try {
+      const generatedQuiz = await generateQuiz(inputText, numberOfQuestions);
+      setQuizData(generatedQuiz);
+      resetQuiz();
+    } catch (error) {
+      console.error("Failed to generate quiz:", error);
+      setError("Failed to generate quiz. Please try again.");
+    }
+    setIsGenerating(false);
+  };
 
-  useEffect(() => {
-    fetchNotes();
-  }, []);
+  const resetQuiz = () => {
+    setCurrentQuestion(0);
+    setScore(0);
+    setShowScore(false);
+    setFeedback(null);
+    setAnswered(false);
+    setShowNextButton(false);
+  };
 
-  async function fetchNotes() {
-    const { data: notes } = await client.models.Note.list();
-    await Promise.all(
-      notes.map(async (note) => {
-        if (note.image) {
-          const linkToStorageFile = await getUrl({
-            path: ({ identityId }) => `media/${identityId}/${note.image}`,
-          });
-          console.log(linkToStorageFile.url);
-          note.image = linkToStorageFile.url;
-        }
-        return note;
-      })
-    );
-    console.log(notes);
-    setNotes(notes);
-  }
+  const handleAnswerClick = (isCorrect) => {
+    if (!answered) {
+      setAnswered(true);
+      if (isCorrect) {
+        setScore(score + 1);
+        setFeedback('Correct!');
+      } else {
+        setFeedback('Incorrect!');
+      }
+      setShowNextButton(true);
+    }
+  };
 
-  async function createNote(event) {
-    event.preventDefault();
-    const form = new FormData(event.target);
-    console.log(form.get("image").name);
+  const handleNextQuestion = () => {
+    setFeedback(null);
+    setAnswered(false);
+    setShowNextButton(false);
+    const nextQuestion = currentQuestion + 1;
+    if (nextQuestion < quizData.questions.length) {
+      setCurrentQuestion(nextQuestion);
+    } else {
+      setShowScore(true);
+    }
+  };
 
-    const { data: newNote } = await client.models.Note.create({
-      name: form.get("name"),
-      description: form.get("description"),
-      image: form.get("image").name,
-    });
-
-    console.log(newNote);
-    if (newNote.image)
-      if (newNote.image)
-        await uploadData({
-          path: ({ identityId }) => `media/${identityId}/${newNote.image}`,
-
-          data: form.get("image"),
-        }).result;
-
-    fetchNotes();
-    event.target.reset();
-  }
-
-  async function deleteNote({ id }) {
-    const toBeDeletedNote = {
-      id: id,
-    };
-
-    const { data: deletedNote } = await client.models.Note.delete(
-      toBeDeletedNote
-    );
-    console.log(deletedNote);
-
-    fetchNotes();
-  }
+  const restartQuiz = () => {
+    resetQuiz();
+    setQuizData(null);
+    setInputText('');
+  };
 
   return (
-    <Authenticator>
-      {({ signOut }) => (
-        <Flex
-          className="App"
-          justifyContent="center"
-          alignItems="center"
-          direction="column"
-          width="70%"
-          margin="0 auto"
-        >
-          <Heading level={1}>My Notes App</Heading>
-          <View as="form" margin="3rem 0" onSubmit={createNote}>
-            <Flex
-              direction="column"
-              justifyContent="center"
-              gap="2rem"
-              padding="2rem"
-            >
-              <TextField
-                name="name"
-                placeholder="Note Name"
-                label="Note Name"
-                labelHidden
-                variation="quiet"
-                required
+    <div className="app">
+      <div className="menu-bar">
+        <div className="menu-title">QuizTime!!</div>
+        <div className="menu-items">
+          <a href="#" className="menu-item">Profile</a>
+          <a href="#" className="menu-item">Leaderboard</a>
+          <a href="#" className="menu-item">Quizzes</a>
+        </div>
+      </div>
+      <div className="quiz-container">
+        <div className="quiz-content">
+          {!quizData ? (
+            <div className="quiz-generator">
+              <h2>Generate a Quiz</h2>
+              <textarea
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Paste your text here..."
+                rows="10"
               />
-              <TextField
-                name="description"
-                placeholder="Note Description"
-                label="Note Description"
-                labelHidden
-                variation="quiet"
-                required
-              />
-              <View
-                name="image"
-                as="input"
-                type="file"
-                alignSelf={"end"}
-                accept="image/png, image/jpeg"
-              />
-
-              <Button type="submit" variation="primary">
-                Create Note
-              </Button>
-            </Flex>
-          </View>
-          <Divider />
-          <Heading level={2}>Current Notes</Heading>
-          <Grid
-            margin="3rem 0"
-            autoFlow="column"
-            justifyContent="center"
-            gap="2rem"
-            alignContent="center"
-          >
-            {notes.map((note) => (
-              <Flex
-                key={note.id || note.name}
-                direction="column"
-                justifyContent="center"
-                alignItems="center"
-                gap="2rem"
-                border="1px solid #ccc"
-                padding="2rem"
-                borderRadius="5%"
-                className="box"
-              >
-                <View>
-                  <Heading level="3">{note.name}</Heading>
-                </View>
-                <Text fontStyle="italic">{note.description}</Text>
-                {note.image && (
-                  <Image
-                    src={note.image}
-                    alt={`visual aid for ${notes.name}`}
-                    style={{ width: 400 }}
-                  />
-                )}
-                <Button
-                  variation="destructive"
-                  onClick={() => deleteNote(note)}
+              <div className="question-count-selector">
+                <label htmlFor="questionCount">Number of questions:</label>
+                <select 
+                  id="questionCount" 
+                  value={numberOfQuestions} 
+                  onChange={(e) => setNumberOfQuestions(Number(e.target.value))}
                 >
-                  Delete note
-                </Button>
-              </Flex>
-            ))}
-          </Grid>
-          <Button onClick={signOut}>Sign Out</Button>
-        </Flex>
-      )}
-    </Authenticator>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
+              </div>
+              <button onClick={handleGenerateQuiz} disabled={isGenerating || !inputText.trim()}>
+                {isGenerating ? 'Generating...' : 'Generate Quiz'}
+              </button>
+              {error && <div className="error-message">{error}</div>}
+            </div>
+          ) : showScore ? (
+            <div className="score-section">
+              <h2>Quiz Completed!</h2>
+              <p>You scored {score} out of {quizData.questions.length}</p>
+              <button className="restart-button" onClick={restartQuiz}>New Quiz</button>
+            </div>
+          ) : (
+            <>
+              <h2 className="quiz-title">{quizData.title}</h2>
+              <div className="question-section">
+                <div className="question-count">
+                  <span>Question {currentQuestion + 1}</span>/{quizData.questions.length}
+                </div>
+                <div className="question-text">{quizData.questions[currentQuestion].questionText}</div>
+              </div>
+              <div className="answer-section">
+                {quizData.questions[currentQuestion].answerOptions.map((answerOption, index) => (
+                  <button 
+                    key={index} 
+                    onClick={() => handleAnswerClick(answerOption.isCorrect)}
+                    disabled={answered}
+                    className={answered && answerOption.isCorrect ? 'correct-answer' : ''}
+                  >
+                    {answerOption.answerText}
+                  </button>
+                ))}
+              </div>
+              {feedback && (
+                <div className={`feedback ${feedback === 'Correct!' ? 'correct' : 'incorrect'}`}>
+                  {feedback}
+                </div>
+              )}
+              {showNextButton && (
+                <button 
+                  className="next-button" 
+                  onClick={handleNextQuestion}
+                >
+                  {currentQuestion === quizData.questions.length - 1 ? 'See Results' : 'Next Question'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
+
+export default App;
