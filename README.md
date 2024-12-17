@@ -23,7 +23,7 @@ QuizTime is an interactive web application that generates custom quizzes using A
 1. Deploy the Lambda function:
    - Create a new Lambda function in AWS.
    - Copy the code from `Lambdas/quiz_generator.py` into the function.
-   - Set the runtime to Python 3.9 or later.
+   - Set the runtime to Python 3.13.
    - Ensure the function has permissions to access Amazon Bedrock.
 
 2. Create an API Gateway:
@@ -43,8 +43,8 @@ QuizTime is an interactive web application that generates custom quizzes using A
      ```
 
 4. Install dependencies and run the React app:
-    npm install
-    npm run dev
+   - npm install
+   - npm run dev
 
 ## Note
 
