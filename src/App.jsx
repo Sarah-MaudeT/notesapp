@@ -3,6 +3,7 @@ import './App.css';
 import { generateQuiz } from './quizGenerator';
 
 function App() {
+  // State variables
   const [quizData, setQuizData] = useState(null);
   const [inputText, setInputText] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -15,6 +16,7 @@ function App() {
   const [error, setError] = useState(null);
   const [numberOfQuestions, setNumberOfQuestions] = useState(4);
 
+  // Function to handle quiz generation  
   const handleGenerateQuiz = async () => {
     setIsGenerating(true);
     setError(null);
@@ -29,6 +31,7 @@ function App() {
     setIsGenerating(false);
   };
 
+  // Function to reset quiz state
   const resetQuiz = () => {
     setCurrentQuestion(0);
     setScore(0);
@@ -38,6 +41,7 @@ function App() {
     setShowNextButton(false);
   };
 
+  // Function to handle answer selection
   const handleAnswerClick = (isCorrect) => {
     if (!answered) {
       setAnswered(true);
@@ -51,6 +55,7 @@ function App() {
     }
   };
 
+  // Function to move to the next question or show final score
   const handleNextQuestion = () => {
     setFeedback(null);
     setAnswered(false);
@@ -63,6 +68,7 @@ function App() {
     }
   };
 
+  // Function to restart the quiz
   const restartQuiz = () => {
     resetQuiz();
     setQuizData(null);
@@ -82,6 +88,7 @@ function App() {
       <div className="quiz-container">
         <div className="quiz-content">
           {!quizData ? (
+            // Quiz generation form
             <div className="quiz-generator">
               <h2>Generate a Quiz</h2>
               <textarea
@@ -110,12 +117,14 @@ function App() {
               {error && <div className="error-message">{error}</div>}
             </div>
           ) : showScore ? (
+            // Score display
             <div className="score-section">
               <h2>Quiz Completed!</h2>
               <p>You scored {score} out of {quizData.questions.length}</p>
               <button className="restart-button" onClick={restartQuiz}>New Quiz</button>
             </div>
           ) : (
+            // Quiz questions and answers
             <>
               <h2 className="quiz-title">{quizData.title}</h2>
               <div className="question-section">
