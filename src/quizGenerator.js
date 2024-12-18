@@ -1,5 +1,5 @@
 // API endpoint for quiz generation
-const API_ENDPOINT = 'https://8w7k0i50th.execute-api.ca-central-1.amazonaws.com/test/generate-quiz';
+const API_ENDPOINT = 'you API Gateway invoke URL'; //Change for your real invoke URL
 
 // Function to generate a quiz
 export async function generateQuiz(inputText, numberOfQuestions) {
